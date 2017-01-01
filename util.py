@@ -31,7 +31,7 @@ def predictron_arg_scope(weight_decay=0.0001,
     with arg_scope(
         [layers.conv2d],
         weights_initializer=initializers.variance_scaling_initializer(),
-        activation_fn=nn_ops.relu,
+        activation_fn=None,
         normalizer_fn=layers_lib.batch_norm,
         normalizer_params=batch_norm_params) as sc:
       return sc
