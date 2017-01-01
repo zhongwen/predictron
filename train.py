@@ -8,10 +8,9 @@ from __future__ import print_function
 import logging
 
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
 
-from predictron import Predictron
 from maze import MazeGenerator
+from predictron import Predictron
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -31,8 +30,8 @@ logging.basicConfig()
 logger = logging.getLogger('training')
 logger.setLevel(logging.INFO)
 
-def main(unused_argv):
 
+def main(unused_argv):
   config = FLAGS
 
   model = Predictron(config)

@@ -1,5 +1,6 @@
 """Utils."""
 
+
 class Colour():
   '''
   Borrowed from https://github.com/brendanator/predictron/blob/master/predictron/util.py

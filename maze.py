@@ -4,6 +4,7 @@ https://github.com/brendanator/predictron/blob/master/predictron/maze.py
 '''
 
 import random
+
 from util import Colour
 
 
@@ -27,7 +28,7 @@ class MazeGenerator():
 
     # Edges for use in flood search
     self.not_left_edge, self.not_right_edge, \
-      self.not_top_edge, self.not_bottom_edge = self._edges()
+    self.not_top_edge, self.not_bottom_edge = self._edges()
 
   def _edges(self):
     full_columns = '1' * (self.width - 1)

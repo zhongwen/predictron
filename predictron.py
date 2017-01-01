@@ -11,12 +11,13 @@ from __future__ import print_function
 import logging
 
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
 import tensorflow.contrib.losses as losses
+import tensorflow.contrib.slim as slim
 
 logging.basicConfig()
 logger = logging.getLogger('predictron')
 logger.setLevel(logging.INFO)
+
 
 class Predictron(object):
   def __init__(self, config):
@@ -91,8 +92,8 @@ class Predictron(object):
 
   def build_model(self):
     with tf.variable_scope('state'):
-      state = slim.conv2d(self.inputs, 32, [3,3], scope='conv1')
-      state = slim.conv2d(state, 32, [3,3], scope='conv2')
+      state = slim.conv2d(self.inputs, 32, [3, 3], scope='conv1')
+      state = slim.conv2d(state, 32, [3, 3], scope='conv2')
 
     iter_template = tf.make_template('iter', self.iter_func)
 
@@ -140,7 +141,6 @@ class Predictron(object):
     self.build_preturns()
     self.build_lambda_preturns()
 
-
     self.saver = tf.train.Saver(max_to_keep=self.max_ckpts_to_keep)
 
   def build_preturns(self):
@@ -163,7 +163,7 @@ class Predictron(object):
     g_k = self.values[:, -1, :]
     for k in xrange(self.max_depth - 1, -1, -1):
       g_k = (1 - self.lambdas[:, k, :]) * self.values[:, k, :] + \
-            self.lambdas[:,k, :] * (self.rewards[:,k + 1,:] + self.gammas[:, k + 1,:] * g_k)
+            self.lambdas[:, k, :] * (self.rewards[:, k + 1, :] + self.gammas[:, k + 1, :] * g_k)
     self.g_lambda_preturns = g_k
 
   def build_loss(self):
@@ -181,15 +181,13 @@ class Predictron(object):
       losses.add_loss(self.loss_lambda_preturns)
       self.total_loss = losses.get_total_loss(name='total_loss')
 
-
-
   def setup_global_step(self):
     """Sets up the global step Tensor."""
     global_step = tf.Variable(
-        initial_value=0,
-        name="global_step",
-        trainable=False,
-        collections=[tf.GraphKeys.GLOBAL_STEP, tf.GraphKeys.GLOBAL_VARIABLES])
+      initial_value=0,
+      name="global_step",
+      trainable=False,
+      collections=[tf.GraphKeys.GLOBAL_STEP, tf.GraphKeys.GLOBAL_VARIABLES])
 
     self.global_step = global_step
 
