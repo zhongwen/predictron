@@ -22,9 +22,10 @@ tf.flags.DEFINE_integer('num_steps', 1000000, 'num of training steps')
 tf.flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
 tf.flags.DEFINE_float('max_grad_norm', 10., 'clip grad norm into this value')
 tf.flags.DEFINE_integer('max_ckpts_to_keep', 20, 'maximum checkpoint models to keep')
-tf.flags.DEFINE_string('train_dir', '/tmp', 'training directory')
+tf.flags.DEFINE_string('train_dir', './models/', 'training directory')
 tf.flags.DEFINE_integer("log_every_n_steps", 1,
                         "Frequency at which loss and global step are logged.")
+tf.flags.DEFINE_integer('save_freq', 10, 'Model save frequency')
 
 logging.basicConfig()
 logger = logging.getLogger('training')
@@ -44,10 +45,14 @@ def main(unused_argv):
     density=FLAGS.maze_density)
 
   for step in xrange(FLAGS.num_steps):
+    if step % 100 == 0:
+      logger.info('step = {}'.format(step))
     maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
     # maze_gen.print_maze(maze_ims, maze_labels)
     total_loss = model.train(maze_ims, maze_labels)
     logger.info('total_loss = {}'.format(total_loss))
+    if step % FLAGS.save_freq == 0:
+      model.save(FLAGS.train_dir)
 
 
 if __name__ == '__main__':

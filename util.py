@@ -1,5 +1,41 @@
 """Utils."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import tensorflow as tf
+from tensorflow.contrib import layers
+from tensorflow.contrib.framework.python.ops import arg_scope
+from tensorflow.contrib.layers.python.layers import initializers
+from tensorflow.contrib.layers.python.layers import layers as layers_lib
+from tensorflow.contrib.layers.python.layers import regularizers
+from tensorflow.python.ops import nn_ops
+
+def predictron_arg_scope(weight_decay=0.0001,
+                         batch_norm_decay=0.997,
+                         batch_norm_epsilon=1e-5,
+                         batch_norm_scale=True):
+
+  batch_norm_params = {
+      'decay': batch_norm_decay,
+      'epsilon': batch_norm_epsilon,
+      'scale': batch_norm_scale,
+      'updates_collections': tf.GraphKeys.UPDATE_OPS,
+  }
+
+  # Set weight_decay for weights in Conv and FC layers.
+  with arg_scope(
+      [layers.conv2d, layers_lib.fully_connected],
+      weights_regularizer=regularizers.l2_regularizer(weight_decay)):
+    with arg_scope(
+        [layers.conv2d],
+        weights_initializer=initializers.variance_scaling_initializer(),
+        activation_fn=nn_ops.relu,
+        normalizer_fn=layers_lib.batch_norm,
+        normalizer_params=batch_norm_params) as sc:
+      return sc
+
 
 class Colour():
   '''

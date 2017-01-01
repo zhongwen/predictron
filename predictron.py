@@ -11,8 +11,11 @@ from __future__ import print_function
 import logging
 
 import tensorflow as tf
+import tensorflow.contrib.layers as layers
 import tensorflow.contrib.losses as losses
 import tensorflow.contrib.slim as slim
+
+from util import predictron_arg_scope
 
 logging.basicConfig()
 logger = logging.getLogger('predictron')
@@ -61,39 +64,48 @@ class Predictron(object):
     logger.info('*' * 30)
 
   def iter_func(self, state):
-    with slim.arg_scope(
-        [slim.conv2d, slim.fully_connected],
-        activation_fn=tf.nn.relu,
-        weights_initializer=tf.truncated_normal_initializer(0.0, 0.01),
-        weights_regularizer=slim.l2_regularizer(0.0005)):
+    sc = predictron_arg_scope()
+
+    with slim.arg_scope(sc):
       net = slim.conv2d(state, 32, [3, 3], scope='conv1')
+      net = layers.batch_norm(net, activation_fn=tf.nn.relu, scope='conv1/preact')
 
       with tf.variable_scope('value'):
         value_net = slim.fully_connected(slim.flatten(net), 32, scope='fc0')
+        value_net = layers.batch_norm(value_net, activation_fn=tf.nn.relu, scope='fc0/preact')
         value_net = slim.fully_connected(value_net, self.maze_size, activation_fn=None, scope='fc1')
 
       net = slim.conv2d(net, 32, [3, 3], scope='conv2')
+      net = layers.batch_norm(net, activation_fn=tf.nn.relu, scope='conv2/preact')
       net_flatten = slim.flatten(net, scope='conv2/flatten')
 
       with tf.variable_scope('reward'):
         reward_net = slim.fully_connected(net_flatten, 32, scope='fc0')
+        reward_net = layers.batch_norm(reward_net, activation_fn=tf.nn.relu, scope='fc0/preact')
         reward_net = slim.fully_connected(reward_net, self.maze_size, activation_fn=None, scope='fc1')
 
       with tf.variable_scope('gamma'):
         gamma_net = slim.fully_connected(net_flatten, 32, scope='fc0')
+        gamma_net = layers.batch_norm(gamma_net, activation_fn=tf.nn.relu, scope='fc0/preact')
         gamma_net = slim.fully_connected(gamma_net, self.maze_size, activation_fn=tf.nn.sigmoid, scope='fc1')
 
       with tf.variable_scope('lambda'):
         lambda_net = slim.fully_connected(net_flatten, 32, scope='fc0')
+        lambda_net = layers.batch_norm(lambda_net, activation_fn=tf.nn.relu, scope='fc0/preact')
         lambda_net = slim.fully_connected(lambda_net, self.maze_size, activation_fn=tf.nn.sigmoid, scope='fc1')
 
       net = slim.conv2d(net, 32, [3, 3], scope='conv3')
+      net = layers.batch_norm(net, activation_fn=tf.nn.relu, scope='conv3/preact')
     return net, reward_net, gamma_net, lambda_net, value_net
 
   def build_model(self):
+    sc = predictron_arg_scope()
     with tf.variable_scope('state'):
-      state = slim.conv2d(self.inputs, 32, [3, 3], scope='conv1')
-      state = slim.conv2d(state, 32, [3, 3], scope='conv2')
+      with slim.arg_scope(sc):
+        state = slim.conv2d(self.inputs, 32, [3, 3], scope='conv1')
+        state = layers.batch_norm(state, activation_fn=tf.nn.relu, scope='conv1/preact')
+        state = slim.conv2d(state, 32, [3, 3], scope='conv2')
+        state = layers.batch_norm(state, activation_fn=tf.nn.relu, scope='conv2/preact')
 
     iter_template = tf.make_template('iter', self.iter_func)
 
@@ -195,14 +207,17 @@ class Predictron(object):
     self.init_op = tf.global_variables_initializer()
 
   def setup_train_op(self):
-    self.train_op = tf.contrib.layers.optimize_loss(
-      loss=self.total_loss,
-      global_step=self.global_step,
-      learning_rate=self.learning_rate,
-      optimizer=tf.train.AdamOptimizer,
-      clip_gradients=self.max_grad_norm,
-      name='train_op'
-    )
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    update_op = tf.group(*update_ops)
+    with tf.control_dependencies([update_op]):
+      self.train_op = tf.contrib.layers.optimize_loss(
+        loss=self.total_loss,
+        global_step=self.global_step,
+        learning_rate=self.learning_rate,
+        optimizer=tf.train.AdamOptimizer,
+        clip_gradients=self.max_grad_norm,
+        name='train_op'
+      )
 
   def train(self, maze_ims, maze_targets):
     _, total_loss = self.sess.run(
@@ -215,3 +230,6 @@ class Predictron(object):
   def init(self):
     logger.info('Initializing the network.')
     self.sess.run(self.init_op)
+
+  def save(self, save_path):
+    self.saver.save(self.sess, save_path=save_path, global_step=self.global_step)
