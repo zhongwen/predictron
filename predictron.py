@@ -8,10 +8,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
+
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import tensorflow.contrib.losses as losses
 
+logging.basicConfig()
+logger = logging.getLogger('predictron')
+logger.setLevel(logging.INFO)
 
 class Predictron(object):
   def __init__(self, config):
@@ -40,11 +45,19 @@ class Predictron(object):
     self.sess = tf.Session()
 
   def build(self):
+    logger.info('Buidling Predictron.')
     self.build_model()
     self.build_loss()
     self.setup_global_step()
+    logger.info('Setuping training & init op.')
     self.setup_train_op()
     self.setup_init_op()
+
+    logger.info('Trainable variables:')
+    logger.info('*' * 30)
+    for var in tf.trainable_variables():
+      logger.info(var.op.name)
+    logger.info('*' * 30)
 
   def iter_func(self, state):
     with slim.arg_scope(
@@ -52,28 +65,28 @@ class Predictron(object):
         activation_fn=tf.nn.relu,
         weights_initializer=tf.truncated_normal_initializer(0.0, 0.01),
         weights_regularizer=slim.l2_regularizer(0.0005)):
-      with tf.variable_scope('hidden'):
-        net = slim.conv2d(state, 32, [3, 3])
+      net = slim.conv2d(state, 32, [3, 3], scope='conv1')
 
-      with tf.variable_scope('val'):
-        value_net = slim.fully_connected(slim.flatten(net), 32)
-        value_net = slim.fully_connected(value_net, self.maze_size, activation_fn=None)
+      with tf.variable_scope('value'):
+        value_net = slim.fully_connected(slim.flatten(net), 32, scope='fc0')
+        value_net = slim.fully_connected(value_net, self.maze_size, activation_fn=None, scope='fc1')
 
-      net = slim.conv2d(net, 32, [3, 3])
-      net_flatten = slim.flatten(net)
+      net = slim.conv2d(net, 32, [3, 3], scope='conv2')
+      net_flatten = slim.flatten(net, scope='conv2/flatten')
+
       with tf.variable_scope('reward'):
-        reward_net = slim.fully_connected(net_flatten, 32)
-        reward_net = slim.fully_connected(reward_net, self.maze_size, activation_fn=None)
+        reward_net = slim.fully_connected(net_flatten, 32, scope='fc0')
+        reward_net = slim.fully_connected(reward_net, self.maze_size, activation_fn=None, scope='fc1')
 
       with tf.variable_scope('gamma'):
-        gamma_net = slim.fully_connected(net_flatten, 32)
-        gamma_net = slim.fully_connected(gamma_net, self.maze_size, activation_fn=tf.nn.sigmoid)
+        gamma_net = slim.fully_connected(net_flatten, 32, scope='fc0')
+        gamma_net = slim.fully_connected(gamma_net, self.maze_size, activation_fn=tf.nn.sigmoid, scope='fc1')
 
       with tf.variable_scope('lambda'):
-        lambda_net = slim.fully_connected(net_flatten, 32)
-        lambda_net = slim.fully_connected(lambda_net, self.maze_size, activation_fn=tf.nn.sigmoid)
+        lambda_net = slim.fully_connected(net_flatten, 32, scope='fc0')
+        lambda_net = slim.fully_connected(lambda_net, self.maze_size, activation_fn=tf.nn.sigmoid, scope='fc1')
 
-      net = slim.conv2d(net, 32, [3, 3])
+      net = slim.conv2d(net, 32, [3, 3], scope='conv3')
     return net, reward_net, gamma_net, lambda_net, value_net
 
   def build_model(self):
@@ -199,4 +212,5 @@ class Predictron(object):
                              self.targets: maze_target})
 
   def init(self):
+    logger.info('Initializing the network.')
     self.sess.run(self.init_op)
