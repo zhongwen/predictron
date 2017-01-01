@@ -206,10 +206,13 @@ class Predictron(object):
       name='train_op'
     )
 
-  def train(self, maze_im, maze_target):
-    self.sess.run(self.train_op,
-                  feed_dict={self.inputs: maze_im,
-                             self.targets: maze_target})
+  def train(self, maze_ims, maze_targets):
+    _, total_loss = self.sess.run(
+      [self.train_op, self.total_loss],
+      feed_dict={
+        self.inputs: maze_ims,
+        self.targets: maze_targets})
+    return total_loss
 
   def init(self):
     logger.info('Initializing the network.')

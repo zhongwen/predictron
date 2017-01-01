@@ -5,6 +5,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
+
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
@@ -25,6 +27,9 @@ tf.flags.DEFINE_string('train_dir', '/tmp', 'training directory')
 tf.flags.DEFINE_integer("log_every_n_steps", 1,
                         "Frequency at which loss and global step are logged.")
 
+logging.basicConfig()
+logger = logging.getLogger('training')
+logger.setLevel(logging.INFO)
 
 def main(unused_argv):
 
@@ -42,7 +47,8 @@ def main(unused_argv):
   for step in xrange(FLAGS.num_steps):
     maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
     # maze_gen.print_maze(maze_ims, maze_labels)
-    model.train(maze_ims, maze_labels)
+    total_loss = model.train(maze_ims, maze_labels)
+    logger.info('total_loss = {}'.format(total_loss))
 
 
 if __name__ == '__main__':
