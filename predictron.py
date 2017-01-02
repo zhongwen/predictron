@@ -47,6 +47,7 @@ class Predictron(object):
     self.lambda_preturns = None
 
     self.sess = tf.Session()
+    self.graph = self.sess.graph
 
   def build(self):
     logger.info('Buidling Predictron.')
@@ -62,6 +63,8 @@ class Predictron(object):
     for var in tf.trainable_variables():
       logger.info(var.op.name)
     logger.info('*' * 30)
+
+    self.merged = tf.summary.merge_all()
 
   def iter_func(self, state):
     sc = predictron_arg_scope()
@@ -220,12 +223,12 @@ class Predictron(object):
       )
 
   def train(self, maze_ims, maze_targets):
-    _, total_loss = self.sess.run(
-      [self.train_op, self.total_loss],
+    _, total_loss, summary = self.sess.run(
+      [self.train_op, self.total_loss, self.merged],
       feed_dict={
         self.inputs: maze_ims,
         self.targets: maze_targets})
-    return total_loss
+    return total_loss, summary
 
   def init(self):
     logger.info('Initializing the network.')

@@ -26,6 +26,7 @@ tf.flags.DEFINE_string('train_dir', './models/', 'training directory')
 tf.flags.DEFINE_integer("log_every_n_steps", 1,
                         "Frequency at which loss and global step are logged.")
 tf.flags.DEFINE_integer('save_freq', 10, 'Model save frequency')
+tf.flags.DEFINE_string('summaries_dir', './logs', 'Directory to write summaries')
 
 logging.basicConfig()
 logger = logging.getLogger('training')
@@ -35,10 +36,12 @@ logger.setLevel(logging.INFO)
 def main(unused_argv):
   config = FLAGS
 
+
   model = Predictron(config)
   model.build()
   model.init()
-
+  train_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/train',
+                                       model.graph)
   maze_gen = MazeGenerator(
     height=FLAGS.maze_size,
     width=FLAGS.maze_size,
@@ -49,8 +52,9 @@ def main(unused_argv):
       logger.info('step = {}'.format(step))
     maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
     # maze_gen.print_maze(maze_ims, maze_labels)
-    total_loss = model.train(maze_ims, maze_labels)
+    total_loss, summary = model.train(maze_ims, maze_labels)
     logger.info('total_loss = {}'.format(total_loss))
+    train_writer.add_summary(summary, step)
     if step % FLAGS.save_freq == 0:
       model.save(FLAGS.train_dir)
 
