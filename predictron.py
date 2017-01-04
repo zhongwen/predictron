@@ -23,9 +23,12 @@ logger.setLevel(logging.INFO)
 
 
 class Predictron(object):
-  def __init__(self, config):
-    self.inputs = tf.placeholder(tf.float32, shape=[None, config.maze_size, config.maze_size, 1])
-    self.targets = tf.placeholder(tf.float32, shape=[None, 20])
+  def __init__(self, maze_ims, maze_labels, config):
+    # self.inputs = tf.placeholder(tf.float32, shape=[None, config.maze_size, config.maze_size, 1])
+    # self.targets = tf.placeholder(tf.float32, shape=[None, 20])
+
+    self.inputs = maze_ims
+    self.targets = maze_labels
 
     self.maze_size = config.maze_size
     self.max_depth = config.max_depth

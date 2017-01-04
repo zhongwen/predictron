@@ -14,7 +14,7 @@ import numpy as np
 import tensorflow as tf
 
 from predictron import Predictron
-
+from maze import MazeGenerator
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -32,8 +32,8 @@ tf.flags.DEFINE_float('max_grad_norm', 10., 'clip grad norm into this value')
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 
-def tower_loss(scope, config):
-  model = Predictron(config)
+def tower_loss(scope, maze_ims, maze_labels, config):
+  model = Predictron(maze_ims, maze_labels, config)
   model.build()
   losses = tf.get_collection('losses', scope)
   total_loss = tf.add_n(losses, name='total_loss')
@@ -86,6 +86,11 @@ def train():
 
     opt = tf.train.AdamOptimizer(FLAGS.learning_rate)
 
+    maze_ims_ph = tf.placeholder(tf.float32, shape=[None, FLAGS.maze_size, FLAGS.maze_size, 1])
+    maze_labels_ph = tf.placeholder(tf.float32, shape=[None, FLAGS.maze_size])
+
+    maze_ims_splits = tf.split(0, FLAGS.num_gpus, maze_ims_ph)
+    maze_labels_splits = tf.split(0, FLAGS.num_gpus, maze_labels_ph)
     # Calculate the gradients for each model tower.
     tower_grads = []
     for i in xrange(FLAGS.num_gpus):
@@ -94,7 +99,7 @@ def train():
           # Calculate the loss for one tower of the CIFAR model. This function
           # constructs the entire CIFAR model but shares the variables across
           # all towers.
-          loss = tower_loss(scope, config)
+          loss = tower_loss(scope, maze_ims_splits[i], maze_labels_ph[i], config)
 
           # Reuse variables for the next tower.
           tf.get_variable_scope().reuse_variables()
@@ -142,9 +147,20 @@ def train():
 
     summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
 
+    maze_gen = MazeGenerator(
+      height=FLAGS.maze_size,
+      width=FLAGS.maze_size,
+      density=FLAGS.maze_density)
+
     for step in xrange(FLAGS.max_steps):
+      # TODO(zhongwen): make a seperate thread
+      maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
       start_time = time.time()
-      _, loss_value = sess.run([train_op, loss])
+      _, loss_value = sess.run([train_op, loss],
+                               feed_dict={
+                                 maze_ims_ph: maze_ims,
+                                 maze_labels_ph: maze_labels
+                               })
       duration = time.time() - start_time
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
