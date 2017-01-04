@@ -98,7 +98,7 @@ def train():
           tf.get_variable_scope().reuse_variables()
 
           # Retain the summaries from the final tower.
-          summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope)
+          # summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope)
 
           # Calculate the gradients for the batch of data on this CIFAR tower.
           grads = opt.compute_gradients(loss)
@@ -122,7 +122,7 @@ def train():
       saver = tf.train.Saver(tf.global_variables())
 
       # Build the summary operation from the last tower summaries.
-      summary_op = tf.summary.merge(summaries)
+      # TODO
 
       # Build an initialization operation to run below.
       init = tf.global_variables_initializer()
@@ -157,9 +157,9 @@ def train():
           print (format_str % (datetime.now(), step, loss_value,
                                examples_per_sec, sec_per_batch))
 
-        if step % 100 == 0:
-          summary_str = sess.run(summary_op)
-          summary_writer.add_summary(summary_str, step)
+        # if step % 100 == 0:
+          # summary_str = sess.run(summary_op)
+          # summary_writer.add_summary(summary_str, step)
 
         # Save the model checkpoint periodically.
         if step % 1000 == 0 or (step + 1) == FLAGS.max_steps:
