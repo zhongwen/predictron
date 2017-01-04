@@ -99,7 +99,7 @@ def train():
           # Calculate the loss for one tower of the CIFAR model. This function
           # constructs the entire CIFAR model but shares the variables across
           # all towers.
-          loss = tower_loss(scope, maze_ims_splits[i], maze_labels_ph[i], config)
+          loss = tower_loss(scope, maze_ims_splits[i], maze_labels_splits[i], config)
 
           # Reuse variables for the next tower.
           tf.get_variable_scope().reuse_variables()
