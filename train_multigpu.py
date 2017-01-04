@@ -29,6 +29,8 @@ tf.flags.DEFINE_integer('maze_size', 20, 'size of maze (square)')
 tf.flags.DEFINE_float('maze_density', 0.3, 'Maze density')
 tf.flags.DEFINE_integer('max_depth', 16, 'maximum model depth')
 tf.flags.DEFINE_float('max_grad_norm', 10., 'clip grad norm into this value')
+tf.app.flags.DEFINE_boolean('log_device_placement', False,
+                            """Whether to log device placement.""")
 
 def tower_loss(scope, config):
   model = Predictron(config)
