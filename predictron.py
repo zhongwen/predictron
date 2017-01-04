@@ -31,7 +31,6 @@ class Predictron(object):
     self.max_depth = config.max_depth
     self.learning_rate = config.learning_rate
     self.max_grad_norm = config.max_grad_norm
-    self.max_ckpts_to_keep = config.max_ckpts_to_keep
 
     # Tensor rewards with shape [batch_size, max_depth + 1, maze_size]
     self.rewards = None
@@ -53,18 +52,12 @@ class Predictron(object):
     logger.info('Buidling Predictron.')
     self.build_model()
     self.build_loss()
-    self.setup_global_step()
-    logger.info('Setuping training & init op.')
-    self.setup_train_op()
-    self.setup_init_op()
 
     logger.info('Trainable variables:')
     logger.info('*' * 30)
     for var in tf.trainable_variables():
       logger.info(var.op.name)
     logger.info('*' * 30)
-
-    self.merged = tf.summary.merge_all()
 
   def iter_func(self, state):
     sc = predictron_arg_scope()
@@ -156,7 +149,6 @@ class Predictron(object):
     self.build_preturns()
     self.build_lambda_preturns()
 
-    self.saver = tf.train.Saver(max_to_keep=self.max_ckpts_to_keep)
 
   def build_preturns(self):
     ''' Eqn (2) '''
@@ -195,44 +187,3 @@ class Predictron(object):
         self.g_lambda_preturns, self.targets, scope='lambda_preturns')
       losses.add_loss(self.loss_lambda_preturns)
       self.total_loss = losses.get_total_loss(name='total_loss')
-
-  def setup_global_step(self):
-    """Sets up the global step Tensor."""
-    global_step = tf.Variable(
-      initial_value=0,
-      name="global_step",
-      trainable=False,
-      collections=[tf.GraphKeys.GLOBAL_STEP, tf.GraphKeys.GLOBAL_VARIABLES])
-
-    self.global_step = global_step
-
-  def setup_init_op(self):
-    self.init_op = tf.global_variables_initializer()
-
-  def setup_train_op(self):
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    update_op = tf.group(*update_ops)
-    with tf.control_dependencies([update_op]):
-      self.train_op = tf.contrib.layers.optimize_loss(
-        loss=self.total_loss,
-        global_step=self.global_step,
-        learning_rate=self.learning_rate,
-        optimizer=tf.train.AdamOptimizer,
-        clip_gradients=self.max_grad_norm,
-        name='train_op'
-      )
-
-  def train(self, maze_ims, maze_targets):
-    _, total_loss, summary = self.sess.run(
-      [self.train_op, self.total_loss, self.merged],
-      feed_dict={
-        self.inputs: maze_ims,
-        self.targets: maze_targets})
-    return total_loss, summary
-
-  def init(self):
-    logger.info('Initializing the network.')
-    self.sess.run(self.init_op)
-
-  def save(self, save_path):
-    self.saver.save(self.sess, save_path=save_path, global_step=self.global_step)
