@@ -103,7 +103,7 @@ class Predictron(object):
         state = slim.conv2d(state, 32, [3, 3], scope='conv2')
         state = layers.batch_norm(state, activation_fn=tf.nn.relu, scope='conv2/preact')
 
-    iter_template = tf.make_template('iter', self.iter_func)
+    iter_template = tf.make_template('iter', self.iter_func, unique_name_='iter')
 
     rewards_arr = []
     gammas_arr = []
