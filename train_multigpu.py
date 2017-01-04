@@ -122,7 +122,7 @@ def train():
       saver = tf.train.Saver(tf.global_variables())
 
       # Build the summary operation from the last tower summaries.
-      summary_op = tf.contrib.deprecated.merge_summary(summaries)
+      summary_op = tf.summary.merge(summaries)
 
       # Build an initialization operation to run below.
       init = tf.global_variables_initializer()
