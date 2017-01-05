@@ -35,9 +35,11 @@ tf.app.flags.DEFINE_boolean('log_device_placement', False,
 def tower_loss(scope, maze_ims, maze_labels, config):
   model = Predictron(maze_ims, maze_labels, config)
   model.build()
+  loss_preturns = model.loss_preturns
+  loss_lambda_preturns = model.loss_lambda_preturns
   losses = tf.get_collection('losses', scope)
   total_loss = tf.add_n(losses, name='total_loss')
-  return total_loss
+  return total_loss,loss_preturns, loss_lambda_preturns
 
 
 def average_gradients(tower_grads):
@@ -99,7 +101,11 @@ def train():
           # Calculate the loss for one tower of the CIFAR model. This function
           # constructs the entire CIFAR model but shares the variables across
           # all towers.
-          loss = tower_loss(scope, maze_ims_splits[i], maze_labels_splits[i], config)
+          loss, loss_preturns, loss_lambda_preturns = tower_loss(
+            scope,
+            maze_ims_splits[i],
+            maze_labels_splits[i],
+            config)
 
           # Reuse variables for the next tower.
           tf.get_variable_scope().reuse_variables()
@@ -156,11 +162,12 @@ def train():
       # TODO(zhongwen): make a seperate thread
       maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
       start_time = time.time()
-      _, loss_value = sess.run([train_op, loss],
-                               feed_dict={
-                                 maze_ims_ph: maze_ims,
-                                 maze_labels_ph: maze_labels
-                               })
+      _, loss_value, loss_preturns_val, loss_lambda_preturns_val = sess.run(
+        [train_op, loss, loss_preturns, loss_lambda_preturns],
+        feed_dict={
+          maze_ims_ph: maze_ims,
+          maze_labels_ph: maze_labels
+          })
       duration = time.time() - start_time
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
@@ -170,9 +177,9 @@ def train():
         examples_per_sec = num_examples_per_step / duration
         sec_per_batch = duration / FLAGS.num_gpus
 
-        format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
+        format_str = ('%s: step %d, loss = %.4f, loss_preturns = %.4f, loss_lambda_preturns = %.4f (%.1f examples/sec; %.3f '
                       'sec/batch)')
-        print (format_str % (datetime.datetime.now(), step, loss_value,
+        print (format_str % (datetime.datetime.now(), step, loss_value, loss_preturns_val, loss_lambda_preturns_val,
                              examples_per_sec, sec_per_batch))
 
       # if step % 100 == 0:
