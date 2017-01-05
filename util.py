@@ -40,6 +40,8 @@ def predictron_arg_scope(weight_decay=0.0001,
 class Colour():
   '''
   Borrowed from https://github.com/brendanator/predictron/blob/master/predictron/util.py
+  Copyright (c) 2016 Brendan Maginnis
+  MIT Licence
   '''
   NORMAL = '\033[0m'
 
