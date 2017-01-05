@@ -9,7 +9,9 @@ from __future__ import print_function
 import datetime
 import time
 import os
-from multiprocessing import Queue, Process
+
+import threading
+import Queue
 
 import numpy as np
 import tensorflow as tf
@@ -83,7 +85,7 @@ def average_gradients(tower_grads):
 def train():
 
 
-  maze_queue = Queue(100)
+  maze_queue = Queue.Queue(100)
 
   def maze_generator():
     maze_gen = MazeGenerator(
@@ -96,7 +98,7 @@ def train():
       maze_queue.put((maze_ims, maze_labels))
 
   for process_i in xrange(FLAGS.num_processes):
-    Process(target=maze_generator).start()
+    threading.Thread(target=maze_generator).start()
 
   config = FLAGS
   with tf.Graph().as_default(), tf.device('/cpu:0'):
