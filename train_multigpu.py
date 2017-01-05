@@ -175,6 +175,8 @@ def train():
     for step in xrange(FLAGS.max_steps):
 
       maze_ims, maze_labels = maze_queue.get()
+      print(type(maze_ims))
+      print(type(maze_labels))
 
       start_time = time.time()
       _, loss_value, loss_preturns_val, loss_lambda_preturns_val = sess.run(
