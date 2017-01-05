@@ -81,20 +81,22 @@ def average_gradients(tower_grads):
   return average_grads
 
 def train():
-  maze_gen = MazeGenerator(
-    height=FLAGS.maze_size,
-    width=FLAGS.maze_size,
-    density=FLAGS.maze_density)
+
 
   maze_queue = Queue(100)
 
-  def maze_generator(output):
+  def maze_generator():
+    maze_gen = MazeGenerator(
+      height=FLAGS.maze_size,
+      width=FLAGS.maze_size,
+      density=FLAGS.maze_density)
+
     while True:
       maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
-      output.put((maze_ims, maze_labels))
+      maze_queue.put((maze_ims, maze_labels))
 
   for process_i in xrange(FLAGS.num_processes):
-    Process(target=maze_generator, args=(maze_queue)).start()
+    Process(target=maze_generator).start()
 
   config = FLAGS
   with tf.Graph().as_default(), tf.device('/cpu:0'):
