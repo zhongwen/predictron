@@ -9,6 +9,7 @@ from __future__ import print_function
 import datetime
 import time
 import os
+from multiprocessing import Queue, Process
 
 import numpy as np
 import tensorflow as tf
@@ -18,19 +19,21 @@ from maze import MazeGenerator
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', './ckpts/predictron_train',
+tf.flags.DEFINE_string('train_dir', './ckpts/predictron_train',
                            'dir to save checkpoints and TB logs')
-tf.app.flags.DEFINE_integer('max_steps', 1000000, 'num of batches')
-tf.app.flags.DEFINE_integer('num_gpus', 2, 'num of GPUs to use')
-tf.app.flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
+tf.flags.DEFINE_integer('max_steps', 1000000, 'num of batches')
+tf.flags.DEFINE_integer('num_gpus', 2, 'num of GPUs to use')
+tf.flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
 
 tf.flags.DEFINE_integer('batch_size', 100, 'batch size')
 tf.flags.DEFINE_integer('maze_size', 20, 'size of maze (square)')
 tf.flags.DEFINE_float('maze_density', 0.3, 'Maze density')
 tf.flags.DEFINE_integer('max_depth', 16, 'maximum model depth')
 tf.flags.DEFINE_float('max_grad_norm', 10., 'clip grad norm into this value')
-tf.app.flags.DEFINE_boolean('log_device_placement', False,
+tf.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
+tf.flags.DEFINE_integer('num_processes', 10,  'num of processes used to generate mazes.')
+
 
 def tower_loss(scope, maze_ims, maze_labels, config):
   model = Predictron(maze_ims, maze_labels, config)
@@ -78,6 +81,21 @@ def average_gradients(tower_grads):
   return average_grads
 
 def train():
+  maze_gen = MazeGenerator(
+    height=FLAGS.maze_size,
+    width=FLAGS.maze_size,
+    density=FLAGS.maze_density)
+
+  maze_queue = Queue(100)
+
+  def maze_generator(output):
+    while True:
+      maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
+      output.put((maze_ims, maze_labels))
+
+  for process_i in xrange(FLAGS.num_processes):
+    Process(target=maze_generator, args=(maze_queue)).start()
+
   config = FLAGS
   with tf.Graph().as_default(), tf.device('/cpu:0'):
     # Create a variable to count the number of train() calls. This equals the
@@ -153,14 +171,10 @@ def train():
 
     summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
 
-    maze_gen = MazeGenerator(
-      height=FLAGS.maze_size,
-      width=FLAGS.maze_size,
-      density=FLAGS.maze_density)
-
     for step in xrange(FLAGS.max_steps):
-      # TODO(zhongwen): make a seperate thread
-      maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
+
+      maze_ims, maze_labels = maze_queue.get()
+
       start_time = time.time()
       _, loss_value, loss_preturns_val, loss_lambda_preturns_val = sess.run(
         [train_op, loss, loss_preturns, loss_lambda_preturns],
