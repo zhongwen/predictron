@@ -10,5 +10,6 @@ David Silver, Hado van Hasselt, Matteo Hessel, Tom Schaul, Arthur Guez, et al.
 Try it with
 ```
 # We assume batch_size can be divided by num_gpus
-python ./train_multigpu.py --max_depths=<2,4,8,16> --batch_size=128 --num_gpus=<your available number of GPUs>
+python ./train_multigpu.py --max_depths=<2,4,8,16> --batch_size=128 \
+  --num_gpus=<your available number of GPUs>
 ```
