@@ -10,6 +10,9 @@ import datetime
 import time
 import os
 
+import threading
+import Queue
+
 import numpy as np
 import tensorflow as tf
 
@@ -18,19 +21,21 @@ from maze import MazeGenerator
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', './ckpts/predictron_train',
+tf.flags.DEFINE_string('train_dir', './ckpts/predictron_train',
                            'dir to save checkpoints and TB logs')
-tf.app.flags.DEFINE_integer('max_steps', 1000000, 'num of batches')
-tf.app.flags.DEFINE_integer('num_gpus', 2, 'num of GPUs to use')
-tf.app.flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
+tf.flags.DEFINE_integer('max_steps', 10000000, 'num of batches')
+tf.flags.DEFINE_integer('num_gpus', 8, 'num of GPUs to use')
+tf.flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
 
-tf.flags.DEFINE_integer('batch_size', 100, 'batch size')
+tf.flags.DEFINE_integer('batch_size', 128, 'batch size')
 tf.flags.DEFINE_integer('maze_size', 20, 'size of maze (square)')
 tf.flags.DEFINE_float('maze_density', 0.3, 'Maze density')
 tf.flags.DEFINE_integer('max_depth', 16, 'maximum model depth')
 tf.flags.DEFINE_float('max_grad_norm', 10., 'clip grad norm into this value')
-tf.app.flags.DEFINE_boolean('log_device_placement', False,
+tf.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
+tf.flags.DEFINE_integer('num_threads', 10,  'num of threads used to generate mazes.')
+
 
 def tower_loss(scope, maze_ims, maze_labels, config):
   model = Predictron(maze_ims, maze_labels, config)
@@ -78,6 +83,24 @@ def average_gradients(tower_grads):
   return average_grads
 
 def train():
+
+
+  maze_queue = Queue.Queue(100)
+
+  def maze_generator():
+    maze_gen = MazeGenerator(
+      height=FLAGS.maze_size,
+      width=FLAGS.maze_size,
+      density=FLAGS.maze_density)
+
+    while True:
+      maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
+      maze_queue.put((maze_ims, maze_labels))
+
+  for thread_i in xrange(FLAGS.num_threads):
+    t = threading.Thread(target=maze_generator)
+    t.start()
+
   config = FLAGS
   with tf.Graph().as_default(), tf.device('/cpu:0'):
     # Create a variable to count the number of train() calls. This equals the
@@ -111,7 +134,7 @@ def train():
           tf.get_variable_scope().reuse_variables()
 
           # Retain the summaries from the final tower.
-          # summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope)
+          summary_merged = tf.summary.merge_all()
 
           # Calculate the gradients for the batch of data on this CIFAR tower.
           grads = opt.compute_gradients(loss)
@@ -134,8 +157,7 @@ def train():
     # Create a saver.
     saver = tf.train.Saver(tf.global_variables())
 
-    # Build the summary operation from the last tower summaries.
-    # TODO
+    summary_op = tf.identity(summary_merged)
 
     # Build an initialization operation to run below.
     init = tf.global_variables_initializer()
@@ -153,20 +175,16 @@ def train():
 
     summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
 
-    maze_gen = MazeGenerator(
-      height=FLAGS.maze_size,
-      width=FLAGS.maze_size,
-      density=FLAGS.maze_density)
-
     for step in xrange(FLAGS.max_steps):
-      # TODO(zhongwen): make a seperate thread
-      maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
       start_time = time.time()
-      _, loss_value, loss_preturns_val, loss_lambda_preturns_val = sess.run(
-        [train_op, loss, loss_preturns, loss_lambda_preturns],
+
+      maze_ims_np, maze_labels_np = maze_queue.get()
+
+      _, loss_value, loss_preturns_val, loss_lambda_preturns_val, summary_str = sess.run(
+        [train_op, loss, loss_preturns, loss_lambda_preturns, summary_op],
         feed_dict={
-          maze_ims_ph: maze_ims,
-          maze_labels_ph: maze_labels
+          maze_ims_ph: maze_ims_np,
+          maze_labels_ph: maze_labels_np
           })
       duration = time.time() - start_time
 
@@ -182,9 +200,8 @@ def train():
         print (format_str % (datetime.datetime.now(), step, loss_value, loss_preturns_val, loss_lambda_preturns_val,
                              examples_per_sec, sec_per_batch))
 
-      # if step % 100 == 0:
-        # summary_str = sess.run(summary_op)
-        # summary_writer.add_summary(summary_str, step)
+      if step % 100 == 0:
+        summary_writer.add_summary(summary_str, step)
 
       # Save the model checkpoint periodically.
       if step % 1000 == 0 or (step + 1) == FLAGS.max_steps:

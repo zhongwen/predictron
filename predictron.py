@@ -185,8 +185,10 @@ class Predictron(object):
       self.targets_tiled = tf.tile(self.targets_tiled, [1, self.max_depth + 1, 1])
       self.loss_preturns = losses.mean_squared_error(self.g_preturns, self.targets_tiled, scope='preturns')
       losses.add_loss(self.loss_preturns)
+      tf.summary.scalar('loss_preturns', self.loss_preturns)
       # Loss Eqn (7)
       self.loss_lambda_preturns = losses.mean_squared_error(
         self.g_lambda_preturns, self.targets, scope='lambda_preturns')
       losses.add_loss(self.loss_lambda_preturns)
+      tf.summary.scalar('loss_lambda_preturns', self.loss_lambda_preturns)
       self.total_loss = losses.get_total_loss(name='total_loss')
