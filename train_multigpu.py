@@ -1,5 +1,9 @@
 '''
+Training the predictron in multiple GPUs.
+
 Modified from Tensorflow/models/tutorials/image/cifar10/cifar10_multi_gpu_train.py
+
+MultiGPUs sync gradient descents on a single machine.
 '''
 
 from __future__ import absolute_import
@@ -8,6 +12,7 @@ from __future__ import print_function
 
 import Queue
 import datetime
+import logging
 import os
 import threading
 import time
@@ -35,8 +40,21 @@ tf.flags.DEFINE_boolean('log_device_placement', False,
                         """Whether to log device placement.""")
 tf.flags.DEFINE_integer('num_threads', 10, 'num of threads used to generate mazes.')
 
+logging.basicConfig()
+logger = logging.getLogger('multigpu_train')
+logger.setLevel(logging.INFO)
 
 def tower_loss(scope, maze_ims, maze_labels, config):
+  '''
+  Computer the loss for each GPU tower.
+  Args:
+    scope: tower scope
+    maze_ims: Tensor of [batch_size, maze_size, maze_size, 1] of maze images
+    maze_labels: Tensor of [batch_size, maze_size] for target label of the connection of diagonal elements
+    config: configuration of the predictron hyperparameters
+  Returns:
+    total_loss to optimize, preturns regression loss and \lambda-preturn loss
+  '''
   model = Predictron(maze_ims, maze_labels, config)
   model.build()
   loss_preturns = model.loss_preturns
@@ -83,13 +101,18 @@ def average_gradients(tower_grads):
 
 
 def train():
+  '''Training function'''
+
+  # The large batch is divided arcoss all towers
   if FLAGS.batch_size % FLAGS.num_gpus != 0:
     raise ValueError('batch_size should be divisible by num_gpus, bs = {}, num_gpus = {}'.format(
       FLAGS.batch_size, FLAGS.num_gpus))
 
+  # Data queue
   maze_queue = Queue.Queue(100)
 
   def maze_generator():
+    # maze generator thread function
     maze_gen = MazeGenerator(
       height=FLAGS.maze_size,
       width=FLAGS.maze_size,
@@ -99,6 +122,7 @@ def train():
       maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
       maze_queue.put((maze_ims, maze_labels))
 
+  # Start a bunch of threads to generate maze data
   for thread_i in xrange(FLAGS.num_threads):
     t = threading.Thread(target=maze_generator)
     t.start()
@@ -111,11 +135,12 @@ def train():
       'global_step', [],
       initializer=tf.constant_initializer(0), trainable=False)
 
+    # optimizer
     opt = tf.train.AdamOptimizer(FLAGS.learning_rate)
-
+    # placeholders for the large batch
     maze_ims_ph = tf.placeholder(tf.float32, shape=[None, FLAGS.maze_size, FLAGS.maze_size, 1])
     maze_labels_ph = tf.placeholder(tf.float32, shape=[None, FLAGS.maze_size])
-
+    # split the large batch arcoss all towers
     maze_ims_splits = tf.split(0, FLAGS.num_gpus, maze_ims_ph)
     maze_labels_splits = tf.split(0, FLAGS.num_gpus, maze_labels_ph)
     # Calculate the gradients for each model tower.
@@ -123,8 +148,8 @@ def train():
     for i in xrange(FLAGS.num_gpus):
       with tf.device('/gpu:%d' % i):
         with tf.name_scope('%s_%d' % ('predictron', i)) as scope:
-          # Calculate the loss for one tower of the CIFAR model. This function
-          # constructs the entire CIFAR model but shares the variables across
+          # Calculate the loss for one tower of the predictron model. This function
+          # constructs the entire predictron model but shares the variables across
           # all towers.
           loss, loss_preturns, loss_lambda_preturns = tower_loss(
             scope,
@@ -138,7 +163,7 @@ def train():
           # Retain the summaries from the final tower.
           summary_merged = tf.summary.merge_all()
 
-          # Calculate the gradients for the batch of data on this CIFAR tower.
+          # Calculate the gradients for the batch of data on this predictron tower.
           grads = opt.compute_gradients(loss)
 
           # Keep track of the gradients across all towers.
@@ -158,7 +183,7 @@ def train():
 
     # Create a saver.
     saver = tf.train.Saver(tf.global_variables())
-
+    # summary op
     summary_op = tf.identity(summary_merged)
 
     # Build an initialization operation to run below.
@@ -174,15 +199,15 @@ def train():
 
     # Start the queue runners.
     tf.train.start_queue_runners(sess=sess)
-
+    # directory to save model checkpoints and events
     train_dir = os.path.join(FLAGS.train_dir, 'max_steps_{}'.format(FLAGS.max_depth))
     summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
 
     for step in xrange(FLAGS.max_steps):
       start_time = time.time()
-
+      # get data from the data queue
       maze_ims_np, maze_labels_np = maze_queue.get()
-
+      # session run
       _, loss_value, loss_preturns_val, loss_lambda_preturns_val, summary_str = sess.run(
         [train_op, loss, loss_preturns, loss_lambda_preturns, summary_op],
         feed_dict={
@@ -201,7 +226,7 @@ def train():
         format_str = (
         '%s: step %d, loss = %.4f, loss_preturns = %.4f, loss_lambda_preturns = %.4f (%.1f examples/sec; %.3f '
         'sec/batch)')
-        print(format_str % (datetime.datetime.now(), step, loss_value, loss_preturns_val, loss_lambda_preturns_val,
+        logger.info(format_str % (datetime.datetime.now(), step, loss_value, loss_preturns_val, loss_lambda_preturns_val,
                             examples_per_sec, sec_per_batch))
 
       if step % 100 == 0:
