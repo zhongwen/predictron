@@ -24,7 +24,7 @@ FLAGS = tf.app.flags.FLAGS
 tf.flags.DEFINE_string('train_dir', './ckpts/predictron_train',
                            'dir to save checkpoints and TB logs')
 tf.flags.DEFINE_integer('max_steps', 10000000, 'num of batches')
-tf.flags.DEFINE_integer('num_gpus', 2, 'num of GPUs to use')
+tf.flags.DEFINE_integer('num_gpus', 8, 'num of GPUs to use')
 tf.flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
 
 tf.flags.DEFINE_integer('batch_size', 128, 'batch size')
