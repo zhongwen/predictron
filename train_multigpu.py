@@ -176,12 +176,10 @@ def train():
     summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
 
     for step in xrange(FLAGS.max_steps):
+      start_time = time.time()
 
       maze_ims_np, maze_labels_np = maze_queue.get()
-      print(maze_ims_np.shape, maze_ims_np.dtype)
-      print(maze_labels_np.shape, maze_labels_np.dtype)
 
-      start_time = time.time()
       _, loss_value, loss_preturns_val, loss_lambda_preturns_val, summary_str = sess.run(
         [train_op, loss, loss_preturns, loss_lambda_preturns, summary_op],
         feed_dict={
