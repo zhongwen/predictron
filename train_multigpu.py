@@ -173,8 +173,6 @@ def train():
     # synchronization point across all towers.
     grad_vars = average_gradients(tower_grads)
     grads, vars = zip(*grad_vars)
-    grads = list(grads)
-    vars = list(vars)
     grads_clipped, _ = tf.clip_by_global_norm(grads, FLAGS.max_grad_norm)
     grad_vars = zip(grads_clipped, vars)
     # Apply the gradients to adjust the shared variables.
