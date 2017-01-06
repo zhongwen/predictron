@@ -58,7 +58,7 @@ def train():
 
   opt = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
   grads = opt.compute_gradients(loss, tf.trainable_variables())
-
+  grads = [(tf.clip_by_global_norm(grad, FLAGS.max_grad_norm)) for grad, var in grads]
   apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
 
   update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)

@@ -147,7 +147,7 @@ def train():
     # We must calculate the mean of each gradient. Note that this is the
     # synchronization point across all towers.
     grads = average_gradients(tower_grads)
-
+    grads = [(tf.clip_by_global_norm(grad, FLAGS.max_grad_norm)) for grad, var in grads]
     # Apply the gradients to adjust the shared variables.
     apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
 
