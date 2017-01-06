@@ -108,9 +108,9 @@ def train():
     assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
     if step % 10 == 0:
-      num_examples_per_step = FLAGS.batch_size * FLAGS.num_gpus
+      num_examples_per_step = FLAGS.batch_size
       examples_per_sec = num_examples_per_step / duration
-      sec_per_batch = duration / FLAGS.num_gpus
+      sec_per_batch = duration
 
       format_str = (
         '%s: step %d, loss = %.4f, loss_preturns = %.4f, loss_lambda_preturns = %.4f (%.1f examples/sec; %.3f '
