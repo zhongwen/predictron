@@ -57,9 +57,11 @@ def train():
   loss_lambda_preturns = model.loss_lambda_preturns
 
   opt = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
-  grads = opt.compute_gradients(loss, tf.trainable_variables())
-  grads = [(tf.clip_by_global_norm(grad, FLAGS.max_grad_norm)) for grad, var in grads]
-  apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
+  grad_vars = opt.compute_gradients(loss, tf.trainable_variables())
+  grads, vars = zip(*grad_vars)
+  grads_clipped, _ = tf.clip_by_global_norm(grads, FLAGS.max_grad_norm)
+  grad_vars = zip(grads_clipped, vars)
+  apply_gradient_op = opt.apply_gradients(grad_vars, global_step=global_step)
 
   update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
   update_op = tf.group(*update_ops)
