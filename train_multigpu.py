@@ -97,7 +97,7 @@ def train():
       maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
       maze_queue.put((maze_ims, maze_labels))
 
-  for process_i in xrange(FLAGS.num_processes):
+  for thread_i in xrange(FLAGS.num_threads):
     t = threading.Thread(target=maze_generator)
     t.start()
 
