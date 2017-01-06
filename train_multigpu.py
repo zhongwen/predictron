@@ -183,7 +183,7 @@ def train():
 
       start_time = time.time()
       _, loss_value, loss_preturns_val, loss_lambda_preturns_val, summary_str = sess.run(
-        [train_op, loss, loss_preturns, loss_lambda_preturns],
+        [train_op, loss, loss_preturns, loss_lambda_preturns, summary_op],
         feed_dict={
           maze_ims_ph: maze_ims_np,
           maze_labels_ph: maze_labels_np
