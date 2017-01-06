@@ -46,8 +46,12 @@ def train():
     'global_step', [],
     initializer=tf.constant_initializer(0), trainable=False)
 
-  model = Predictron(config)
+  maze_ims_ph = tf.placeholder(tf.float32, [None, FLAGS.maze_size, FLAGS.maze_size, 1])
+  maze_labels_ph = tf.placeholder(tf.float32, [None, FLAGS.maze_size])
+
+  model = Predictron(maze_ims_ph, maze_labels_ph, config)
   model.build()
+
   loss = model.loss
   loss_preturns = model.loss_preturns
   loss_lambda_preturns = model.loss_lambda_preturns
@@ -88,9 +92,6 @@ def train():
   for thread_i in xrange(FLAGS.num_threads):
     t = threading.Thread(target=maze_generator)
     t.start()
-
-  maze_ims_ph = tf.placeholder(tf.float32, [None, FLAGS.maze_size, FLAGS.maze_size, 1])
-  maze_labels_ph = tf.placeholder(tf.float32, [None, FLAGS.maze_size])
 
   for step in xrange(FLAGS.max_steps):
     start_time = time.time()
