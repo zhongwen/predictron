@@ -84,6 +84,9 @@ def average_gradients(tower_grads):
 
 def train():
 
+  if FLAGS.batch_size % FLAGS.num_gpus != 0:
+    raise ValueError('batch_size should be divisible by num_gpus, bs = {}, num_gpus = {}'.format(
+      FLAGS.batch_size, FLAGS.num_gpus))
 
   maze_queue = Queue.Queue(100)
 
