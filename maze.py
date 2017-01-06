@@ -24,8 +24,9 @@ Maze generator directly borrowed from
 https://github.com/brendanator/predictron/blob/master/predictron/maze.py
 '''
 
-import numpy as np
 import random
+
+import numpy as np
 
 from util import Colour
 

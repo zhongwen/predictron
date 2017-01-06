@@ -152,7 +152,6 @@ class Predictron(object):
     self.build_preturns()
     self.build_lambda_preturns()
 
-
   def build_preturns(self):
     ''' Eqn (2) '''
 

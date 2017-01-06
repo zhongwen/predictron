@@ -10,18 +10,17 @@ from tensorflow.contrib.framework.python.ops import arg_scope
 from tensorflow.contrib.layers.python.layers import initializers
 from tensorflow.contrib.layers.python.layers import layers as layers_lib
 from tensorflow.contrib.layers.python.layers import regularizers
-from tensorflow.python.ops import nn_ops
+
 
 def predictron_arg_scope(weight_decay=0.0001,
                          batch_norm_decay=0.997,
                          batch_norm_epsilon=1e-5,
                          batch_norm_scale=True):
-
   batch_norm_params = {
-      'decay': batch_norm_decay,
-      'epsilon': batch_norm_epsilon,
-      'scale': batch_norm_scale,
-      'updates_collections': tf.GraphKeys.UPDATE_OPS,
+    'decay': batch_norm_decay,
+    'epsilon': batch_norm_epsilon,
+    'scale': batch_norm_scale,
+    'updates_collections': tf.GraphKeys.UPDATE_OPS,
   }
 
   # Set weight_decay for weights in Conv and FC layers.

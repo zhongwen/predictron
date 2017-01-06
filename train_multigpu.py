@@ -6,23 +6,22 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import datetime
-import time
-import os
-
-import threading
 import Queue
+import datetime
+import os
+import threading
+import time
 
 import numpy as np
 import tensorflow as tf
 
-from predictron import Predictron
 from maze import MazeGenerator
+from predictron import Predictron
 
 FLAGS = tf.app.flags.FLAGS
 
 tf.flags.DEFINE_string('train_dir', './ckpts/predictron_train',
-                           'dir to save checkpoints and TB logs')
+                       'dir to save checkpoints and TB logs')
 tf.flags.DEFINE_integer('max_steps', 10000000, 'num of batches')
 tf.flags.DEFINE_integer('num_gpus', 8, 'num of GPUs to use')
 tf.flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
@@ -33,8 +32,8 @@ tf.flags.DEFINE_float('maze_density', 0.3, 'Maze density')
 tf.flags.DEFINE_integer('max_depth', 16, 'maximum model depth')
 tf.flags.DEFINE_float('max_grad_norm', 10., 'clip grad norm into this value')
 tf.flags.DEFINE_boolean('log_device_placement', False,
-                            """Whether to log device placement.""")
-tf.flags.DEFINE_integer('num_threads', 10,  'num of threads used to generate mazes.')
+                        """Whether to log device placement.""")
+tf.flags.DEFINE_integer('num_threads', 10, 'num of threads used to generate mazes.')
 
 
 def tower_loss(scope, maze_ims, maze_labels, config):
@@ -44,7 +43,7 @@ def tower_loss(scope, maze_ims, maze_labels, config):
   loss_lambda_preturns = model.loss_lambda_preturns
   losses = tf.get_collection('losses', scope)
   total_loss = tf.add_n(losses, name='total_loss')
-  return total_loss,loss_preturns, loss_lambda_preturns
+  return total_loss, loss_preturns, loss_lambda_preturns
 
 
 def average_gradients(tower_grads):
@@ -82,8 +81,8 @@ def average_gradients(tower_grads):
     average_grads.append(grad_and_var)
   return average_grads
 
-def train():
 
+def train():
   if FLAGS.batch_size % FLAGS.num_gpus != 0:
     raise ValueError('batch_size should be divisible by num_gpus, bs = {}, num_gpus = {}'.format(
       FLAGS.batch_size, FLAGS.num_gpus))
@@ -169,8 +168,8 @@ def train():
     # True to build towers on GPU, as some of the ops do not have GPU
     # implementations.
     sess = tf.Session(config=tf.ConfigProto(
-        allow_soft_placement=True,
-        log_device_placement=FLAGS.log_device_placement))
+      allow_soft_placement=True,
+      log_device_placement=FLAGS.log_device_placement))
     sess.run(init)
 
     # Start the queue runners.
@@ -189,7 +188,7 @@ def train():
         feed_dict={
           maze_ims_ph: maze_ims_np,
           maze_labels_ph: maze_labels_np
-          })
+        })
       duration = time.time() - start_time
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
@@ -199,10 +198,11 @@ def train():
         examples_per_sec = num_examples_per_step / duration
         sec_per_batch = duration / FLAGS.num_gpus
 
-        format_str = ('%s: step %d, loss = %.4f, loss_preturns = %.4f, loss_lambda_preturns = %.4f (%.1f examples/sec; %.3f '
-                      'sec/batch)')
-        print (format_str % (datetime.datetime.now(), step, loss_value, loss_preturns_val, loss_lambda_preturns_val,
-                             examples_per_sec, sec_per_batch))
+        format_str = (
+        '%s: step %d, loss = %.4f, loss_preturns = %.4f, loss_lambda_preturns = %.4f (%.1f examples/sec; %.3f '
+        'sec/batch)')
+        print(format_str % (datetime.datetime.now(), step, loss_value, loss_preturns_val, loss_lambda_preturns_val,
+                            examples_per_sec, sec_per_batch))
 
       if step % 100 == 0:
         summary_writer.add_summary(summary_str, step)
@@ -212,8 +212,10 @@ def train():
         checkpoint_path = os.path.join(train_dir, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)
 
+
 def main(argv=None):
   train()
+
 
 if __name__ == '__main__':
   tf.app.run()
