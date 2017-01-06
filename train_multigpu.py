@@ -175,7 +175,7 @@ def train():
     grads, vars = zip(*grad_vars)
     grads = list(grads)
     vars = list(vars)
-    grads_clipped = tf.clip_by_global_norm(grads, FLAGS.max_grad_norm)
+    grads_clipped, _ = tf.clip_by_global_norm(grads, FLAGS.max_grad_norm)
     grad_vars = zip(grads_clipped, vars)
     # Apply the gradients to adjust the shared variables.
     apply_gradient_op = opt.apply_gradients(grad_vars, global_step=global_step)
