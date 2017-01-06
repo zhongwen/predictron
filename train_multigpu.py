@@ -182,7 +182,7 @@ def train():
       print(maze_labels_np.shape, maze_labels_np.dtype)
 
       start_time = time.time()
-      _, loss_value, loss_preturns_val, loss_lambda_preturns_val = sess.run(
+      _, loss_value, loss_preturns_val, loss_lambda_preturns_val, summary_str = sess.run(
         [train_op, loss, loss_preturns, loss_lambda_preturns],
         feed_dict={
           maze_ims_ph: maze_ims_np,
@@ -203,7 +203,6 @@ def train():
                              examples_per_sec, sec_per_batch))
 
       if step % 100 == 0:
-        summary_str = sess.run(summary_op)
         summary_writer.add_summary(summary_str, step)
 
       # Save the model checkpoint periodically.
