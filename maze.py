@@ -119,8 +119,8 @@ class MazeGenerator():
       mazes.append(self.maze_to_input(maze))
       labels.append(connected_diagonals)
 
-    mazes = np.array(mazes)
-    labels = np.array(labels)
+    mazes = np.array(mazes).astype(np.float32)
+    labels = np.array(labels).astype(np.float32)
     return mazes, labels
 
   def generate_mazes(self, batch_size):
