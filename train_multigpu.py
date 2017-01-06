@@ -34,7 +34,7 @@ tf.flags.DEFINE_integer('max_depth', 16, 'maximum model depth')
 tf.flags.DEFINE_float('max_grad_norm', 10., 'clip grad norm into this value')
 tf.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
-tf.flags.DEFINE_integer('num_processes', 10,  'num of processes used to generate mazes.')
+tf.flags.DEFINE_integer('num_threads', 10,  'num of threads used to generate mazes.')
 
 
 def tower_loss(scope, maze_ims, maze_labels, config):
@@ -177,16 +177,14 @@ def train():
 
     for step in xrange(FLAGS.max_steps):
 
-      maze_ims, maze_labels = maze_queue.get()
-      print(type(maze_ims))
-      print(type(maze_labels))
+      maze_ims_np, maze_labels_np = maze_queue.get()
 
       start_time = time.time()
       _, loss_value, loss_preturns_val, loss_lambda_preturns_val = sess.run(
         [train_op, loss, loss_preturns, loss_lambda_preturns],
         feed_dict={
-          maze_ims_ph: maze_ims,
-          maze_labels_ph: maze_labels
+          maze_ims_ph: maze_ims_np,
+          maze_labels_ph: maze_labels_np
           })
       duration = time.time() - start_time
 
