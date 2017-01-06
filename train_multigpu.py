@@ -171,10 +171,13 @@ def train():
 
     # We must calculate the mean of each gradient. Note that this is the
     # synchronization point across all towers.
-    grads = average_gradients(tower_grads)
-    grads = [(tf.clip_by_global_norm(grad, FLAGS.max_grad_norm)) for grad, var in grads]
+    grad_vars = average_gradients(tower_grads)
+    grads = [grad for grad, var in grad_vars]
+    vars = [var for grad, var in grad_vars]
+    grads_clipped = tf.clip_global_norm(grads, FLAGS.max_grad_norm)
+    grad_vars = zip(grads_clipped, vars)
     # Apply the gradients to adjust the shared variables.
-    apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
+    apply_gradient_op = opt.apply_gradients(grad_vars, global_step=global_step)
 
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='predictron_0')
     update_op = tf.group(*update_ops)
