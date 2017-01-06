@@ -52,7 +52,7 @@ def train():
   model = Predictron(maze_ims_ph, maze_labels_ph, config)
   model.build()
 
-  loss = model.loss
+  loss = model.total_loss
   loss_preturns = model.loss_preturns
   loss_lambda_preturns = model.loss_lambda_preturns
 
