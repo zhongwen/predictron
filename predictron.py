@@ -130,14 +130,16 @@ class Predictron(object):
     # [batch_size, K, maze_size]
     self.rewards = tf.reshape(self.rewards, [bs, self.max_depth, self.maze_size])
     # [batch_size, K + 1, maze_size]
-    self.rewards = tf.concat(1, [tf.zeros(shape=[bs, 1, self.maze_size], dtype=tf.float32), self.rewards], 'rewards')
+    self.rewards = tf.concat_v2(value=[tf.zeros(shape=[bs, 1, self.maze_size], dtype=tf.float32), self.rewards],
+                                axis=1, name='rewards')
 
     # [batch_size, K * maze_size]
     self.gammas = tf.pack(gammas_arr, axis=1)
     # [batch_size, K, maze_size]
     self.gammas = tf.reshape(self.gammas, [bs, self.max_depth, self.maze_size])
     # [batch_size, K + 1, maze_size]
-    self.gammas = tf.concat(1, [tf.ones(shape=[bs, 1, self.maze_size], dtype=tf.float32), self.gammas], 'gammas')
+    self.gammas = tf.concat_v2(value=[tf.ones(shape=[bs, 1, self.maze_size], dtype=tf.float32), self.gammas],
+                               axis=1, name='gammas')
 
     # [batch_size, K * maze_size]
     self.lambdas = tf.pack(lambdas_arr, axis=1)
