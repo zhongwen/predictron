@@ -9,6 +9,7 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
+from six.moves import range
 
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
@@ -113,7 +114,7 @@ class Predictron(object):
     lambdas_arr = []
     values_arr = []
 
-    for k in xrange(self.max_depth):
+    for k in range(self.max_depth):
       state, reward, gamma, lambda_, value = iter_template(state)
       rewards_arr.append(reward)
       gammas_arr.append(gamma)
@@ -159,9 +160,9 @@ class Predictron(object):
 
     g_preturns = []
     # for k = 0, g_0 = v[0], still fits.
-    for k in xrange(self.max_depth, -1, -1):
+    for k in range(self.max_depth, -1, -1):
       g_k = self.values[:, k, :]
-      for kk in xrange(k, 0, -1):
+      for kk in range(k, 0, -1):
         g_k = self.rewards[:, kk, :] + self.gammas[:, kk, :] * g_k
       g_preturns.append(g_k)
     # reverse to make 0...K from K...0
@@ -172,7 +173,7 @@ class Predictron(object):
   def build_lambda_preturns(self):
     ''' Eqn (4) '''
     g_k = self.values[:, -1, :]
-    for k in xrange(self.max_depth - 1, -1, -1):
+    for k in range(self.max_depth - 1, -1, -1):
       g_k = (1 - self.lambdas[:, k, :]) * self.values[:, k, :] + \
             self.lambdas[:, k, :] * (self.rewards[:, k + 1, :] + self.gammas[:, k + 1, :] * g_k)
     self.g_lambda_preturns = g_k

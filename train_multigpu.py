@@ -10,7 +10,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import Queue
+import six.moves.queue as queue
+from six.moves import range
 import datetime
 import logging
 import os
@@ -109,7 +110,7 @@ def train():
       FLAGS.batch_size, FLAGS.num_gpus))
 
   # Data queue
-  maze_queue = Queue.Queue(100)
+  maze_queue = queue.Queue(100)
 
   def maze_generator():
     # maze generator thread function
@@ -123,7 +124,7 @@ def train():
       maze_queue.put((maze_ims, maze_labels))
 
   # Start a bunch of threads to generate maze data
-  for thread_i in xrange(FLAGS.num_threads):
+  for thread_i in range(FLAGS.num_threads):
     t = threading.Thread(target=maze_generator)
     t.start()
 
@@ -145,7 +146,7 @@ def train():
     maze_labels_splits = tf.split(0, FLAGS.num_gpus, maze_labels_ph)
     # Calculate the gradients for each model tower.
     tower_grads = []
-    for i in xrange(FLAGS.num_gpus):
+    for i in range(FLAGS.num_gpus):
       with tf.device('/gpu:%d' % i):
         with tf.name_scope('%s_%d' % ('predictron', i)) as scope:
           # Calculate the loss for one tower of the predictron model. This function
@@ -205,7 +206,7 @@ def train():
     train_dir = os.path.join(FLAGS.train_dir, 'max_steps_{}'.format(FLAGS.max_depth))
     summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
 
-    for step in xrange(FLAGS.max_steps):
+    for step in range(FLAGS.max_steps):
       start_time = time.time()
       # get data from the data queue
       maze_ims_np, maze_labels_np = maze_queue.get()
