@@ -10,8 +10,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import six.moves.queue as queue
-from six.moves import range
 import datetime
 import logging
 import os
@@ -19,7 +17,9 @@ import threading
 import time
 
 import numpy as np
+import six.moves.queue as queue
 import tensorflow as tf
+from six.moves import range
 
 from maze import MazeGenerator
 from predictron import Predictron
@@ -44,6 +44,7 @@ tf.flags.DEFINE_integer('num_threads', 10, 'num of threads used to generate maze
 logging.basicConfig()
 logger = logging.getLogger('multigpu_train')
 logger.setLevel(logging.INFO)
+
 
 def tower_loss(scope, maze_ims, maze_labels, config):
   '''
@@ -227,10 +228,11 @@ def train():
         sec_per_batch = duration / FLAGS.num_gpus
 
         format_str = (
-        '%s: step %d, loss = %.4f, loss_preturns = %.4f, loss_lambda_preturns = %.4f (%.1f examples/sec; %.3f '
-        'sec/batch)')
-        logger.info(format_str % (datetime.datetime.now(), step, loss_value, loss_preturns_val, loss_lambda_preturns_val,
-                            examples_per_sec, sec_per_batch))
+          '%s: step %d, loss = %.4f, loss_preturns = %.4f, loss_lambda_preturns = %.4f (%.1f examples/sec; %.3f '
+          'sec/batch)')
+        logger.info(
+          format_str % (datetime.datetime.now(), step, loss_value, loss_preturns_val, loss_lambda_preturns_val,
+                        examples_per_sec, sec_per_batch))
 
       if step % 100 == 0:
         summary_writer.add_summary(summary_str, step)

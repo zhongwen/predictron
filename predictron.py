@@ -9,12 +9,12 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
-from six.moves import range
 
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 import tensorflow.contrib.losses as losses
 import tensorflow.contrib.slim as slim
+from six.moves import range
 
 from util import predictron_arg_scope
 
