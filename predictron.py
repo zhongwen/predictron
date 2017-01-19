@@ -65,18 +65,15 @@ class Predictron(object):
   def iter_func(self, state):
     sc = predictron_arg_scope()
 
+    with tf.variable_scope('value'):
+      value_net = slim.fully_connected(slim.flatten(state), 32, scope='fc0')
+      value_net = layers.batch_norm(value_net, activation_fn=tf.nn.relu, scope='fc0/preact')
+      value_net = slim.fully_connected(value_net, self.maze_size, activation_fn=None, scope='fc1')
+
     with slim.arg_scope(sc):
       net = slim.conv2d(state, 32, [3, 3], scope='conv1')
       net = layers.batch_norm(net, activation_fn=tf.nn.relu, scope='conv1/preact')
-
-      with tf.variable_scope('value'):
-        value_net = slim.fully_connected(slim.flatten(net), 32, scope='fc0')
-        value_net = layers.batch_norm(value_net, activation_fn=tf.nn.relu, scope='fc0/preact')
-        value_net = slim.fully_connected(value_net, self.maze_size, activation_fn=None, scope='fc1')
-
-      net = slim.conv2d(net, 32, [3, 3], scope='conv2')
-      net = layers.batch_norm(net, activation_fn=tf.nn.relu, scope='conv2/preact')
-      net_flatten = slim.flatten(net, scope='conv2/flatten')
+      net_flatten = slim.flatten(net, scope='conv1/flatten')
 
       with tf.variable_scope('reward'):
         reward_net = slim.fully_connected(net_flatten, 32, scope='fc0')
@@ -92,6 +89,9 @@ class Predictron(object):
         lambda_net = slim.fully_connected(net_flatten, 32, scope='fc0')
         lambda_net = layers.batch_norm(lambda_net, activation_fn=tf.nn.relu, scope='fc0/preact')
         lambda_net = slim.fully_connected(lambda_net, self.maze_size, activation_fn=tf.nn.sigmoid, scope='fc1')
+
+      net = slim.conv2d(net, 32, [3, 3], scope='conv2')
+      net = layers.batch_norm(net, activation_fn=tf.nn.relu, scope='conv2/preact')
 
       net = slim.conv2d(net, 32, [3, 3], scope='conv3')
       net = layers.batch_norm(net, activation_fn=tf.nn.relu, scope='conv3/preact')
