@@ -5,7 +5,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import Queue
+import six.moves.queue as queue
+from six.moves import range
 import datetime
 import logging
 import os
@@ -79,7 +80,7 @@ def train():
   summary_merged = tf.summary.merge_all()
   summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
 
-  maze_queue = Queue.Queue(100)
+  maze_queue = queue.Queue(100)
 
   def maze_generator():
     maze_gen = MazeGenerator(
@@ -91,11 +92,11 @@ def train():
       maze_ims, maze_labels = maze_gen.generate_labelled_mazes(FLAGS.batch_size)
       maze_queue.put((maze_ims, maze_labels))
 
-  for thread_i in xrange(FLAGS.num_threads):
+  for thread_i in range(FLAGS.num_threads):
     t = threading.Thread(target=maze_generator)
     t.start()
 
-  for step in xrange(FLAGS.max_steps):
+  for step in range(FLAGS.max_steps):
     start_time = time.time()
     maze_ims_np, maze_labels_np = maze_queue.get()
 
